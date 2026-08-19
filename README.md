@@ -1,273 +1,369 @@
-# Media Monitoring Kherson - Национальные проекты РФ
+````markdown
+# 📰 Media Monitoring Kherson
 
-Веб-приложение для агрегации и мониторинга публикаций о реализации Национальных проектов РФ на территории Херсонской области.
+Платформа для агрегации и анализа публикаций о Национальных проектах РФ в Херсонской области с использованием NLP технологий.
 
-## 🎯 Функциональность
+## 🎯 Основные возможности
 
-- **Агрегация данных**: Парсинг RSS-лент (ТАСС, РИА, Интерфакс), региональных порталов и Telegram-каналов
-- **Геолокация**: Автоматическая фильтрация статей по маркерам локации (Херсон, Геническ, Каховка и т.д.)
-- **NLP Классификация**: Извлечение и классификация 12 Национальных проектов РФ
-- **Интерактивная лента**: Просмотр карточек с бейджами Нацпроектов, сортировка по дате
-- **Фильтры**: По Нацпроекту, источнику, дате
+- **📊 Агрегация данных** - Сбор статей из множества RSS источников
+- **🤖 NLP классификация** - Автоматическая классификация по 12 Национальным проектам
+- **📍 Геолокация** - Фильтрация по Херсонской области
+- **⚡ Фоновая обработка** - Celery для асинхронного парсинга
+- **🔍 Полнотекстовый поиск** - Поиск по заголовкам и содержимому
+- **📈 Статистика** - Аналитика по проектам и источникам
+- **🎨 Современный UI** - React/Next.js интерфейс
 
 ## 🏗️ Архитектура
 
 ```
-media-monitoring-kherson/
-├── backend/                  # FastAPI приложение
-│   ├── app/
-│   │   ├── main.py          # Entry point
-│   │   ├── config.py        # Конфигурация
-│   │   ├── models.py        # SQLAlchemy модели
-│   │   ├── database.py      # DB подключение
-│   │   ├── schemas.py       # Pydantic схемы
-│   │   ├── parsers/         # Парсеры данных
-│   │   │   ├── rss_parser.py
-│   │   │   ├── scrapy_spider.py
-│   │   │   └── telegram_parser.py
-│   │   ├── nlp/             # NLP модуль
-│   │   │   ├── classifier.py
-│   │   │   └── entity_extractor.py
-│   │   ├── api/             # API маршруты
-│   │   │   ├── articles.py
-│   │   │   ├── projects.py
-│   │   │   └── sources.py
-│   │   └── tasks/           # Celery задачи
-│   │       └── parse_feeds.py
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example
-│
-├── frontend/                 # Next.js приложение
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── api/
-│   ├── components/
-│   │   ├── ArticleCard.tsx
-│   │   ├── ArticleFeed.tsx
-│   │   ├── FilterPanel.tsx
-│   │   └── Header.tsx
-│   ├── lib/
-│   │   ├── api.ts
-│   │   └── types.ts
-│   ├── styles/
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tailwind.config.js
-│   └── Dockerfile
-│
-├── docker-compose.yml        # Оркестрация контейнеров
-├── .env.example              # Переменные окружения
-├── .gitignore
-└── README.md
+┌─────────────────────────────────────────────────────────┐
+│                   Frontend (Next.js)                    │
+│                   http://localhost:3000                 │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+                    HTTP/REST API
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│              Backend (FastAPI)                          │
+│              http://localhost:8000                      │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │ API Routes:                                        │ │
+│  │ - /api/v1/articles                                │ │
+│  │ - /api/v1/projects                                │ │
+│  │ - /api/v1/sources                                 │ │
+│  └────────────────────────────────────────────────────┘ │
+└──────────────────┬───────────────────┬──────────────────┘
+                   │                   │
+        ┌──────────▼──┐      ┌────────▼────────┐
+        │   Database  │      │  Message Queue  │
+        │ PostgreSQL  │      │    Redis        │
+        │ :5432       │      │   :6379         │
+        └─────────────┘      └────────┬────────┘
+                                      │
+                          ┌───────────▼──────────┐
+                          │  Celery Worker       │
+                          │  (Background Tasks)  │
+                          │  - RSS Parsing       │
+                          │  - NLP Processing    │
+                          │  - Cleanup           │
+                          └────────────���─────────┘
 ```
 
-## 🛠️ Технический стек
+## 🛠️ Технологический стек
 
 ### Backend
-- **Framework**: FastAPI + Uvicorn
-- **Database**: PostgreSQL
-- **ORM**: SQLAlchemy
-- **Task Queue**: Celery + Redis
-- **Parsing**: Feedparser, BeautifulSoup4, Scrapy, Playwright
-- **NLP**: Natasha, pymorphy2, spaCy
+- **Python 3.11** - Основной язык
+- **FastAPI** - REST API фреймворк
+- **SQLAlchemy** - ORM для работы с БД
+- **Celery** - Асинхронная очередь задач
+- **Redis** - Брокер сообщений и кэш
+- **PostgreSQL** - Основная БД
+- **Natasha** - NLP библиотека для русского языка
+- **feedparser** - Парсинг RSS потоков
 
 ### Frontend
-- **Framework**: Next.js 14 (React 18)
-- **Styling**: TailwindCSS
-- **HTTP Client**: axios/fetch
-- **State Management**: React Context API
+- **Next.js 14** - React фреймворк
+- **TypeScript** - Типизированный JavaScript
+- **Tailwind CSS** - Утилитарный CSS фреймворк
+- **Axios** - HTTP клиент
+- **Lucide React** - Иконки
 
 ### DevOps
-- **Containerization**: Docker + Docker Compose
-- **VCS**: Git + GitHub
+- **Docker** - Контейнеризация
+- **Docker Compose** - Оркестрация контейнеров
 
-## 📋 Требования
+## 📋 Национальные проекты
 
-- Docker & Docker Compose
-- Git
-- Python 3.11+ (для локальной разработки)
-- Node.js 18+ (для локальной разработки)
+Система поддерживает классификацию по 12 Национальным проектам РФ:
+
+1. 👨‍👩‍👧‍👦 **Демография** - Семья, рождаемость, материнский капитал
+2. 🎭 **Культура** - Музеи, театры, выставки, памятники
+3. 🎓 **Образование** - Школы, университеты, инновации в образовании
+4. 🏥 **Здравоохранение** - Больницы, клиники, здоровый образ жизни
+5. 🔬 **Наука и университеты** - Исследования, НИИ, лаборатории
+6. 🏢 **Жилье и городская среда** - Строительство, благоустройство, парки
+7. ♻️ **Экология** - Охрана природы, загрязнение, леса
+8. 🛣️ **Безопасные качественные дороги** - БКД, транспорт, безопасность
+9. 💻 **Цифровая экономика** - IT, интернет, электронные услуги
+10. 💼 **МСП** - Малое и среднее предпринимательство
+11. 🏨 **Туризм** - Туристический бизнес, гостиницы
+12. 👶 **Семья** - Поддержка семей, многодетные
 
 ## 🚀 Быстрый старт
 
-### 1. Клонировать репозиторий
+### Предварительные требования
+
+- Docker & Docker Compose
+- 4GB+ RAM
+- 10GB+ свободного места на диске
+
+### Установка и запуск
+
+1. **Клонируйте репозиторий**
 ```bash
 git clone https://github.com/Samzez1/media-monitoring-kherson.git
 cd media-monitoring-kherson
 ```
 
-### 2. Настроить переменные окружения
+2. **Инициализируйте проект**
+```bash
+chmod +x scripts/*.sh
+bash scripts/init.sh
+```
+
+3. **Откройте приложение**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs (Swagger): http://localhost:8000/docs
+
+## 📖 Использование
+
+### Frontend
+
+**Главная страница**
+- Просмотр всех статей о Национальных проектах
+- Фильтрация по проектам и источникам
+- Поиск по ключевым словам
+
+**Фильтры слева**
+- Выбор Национальных проектов
+- Выбор источников информации
+- Быстрая очистка фильтров
+
+**Статьи**
+- Просмотр заголовка, фрагмента текста
+- Информация об источнике и дате публикации
+- Ссылка на оригинальную статью
+- Теги проектов и маркеры локации
+
+### Backend API
+
+**Получить статьи**
+```bash
+curl http://localhost:8000/api/v1/articles?page=1&page_size=20
+```
+
+**Получить проекты**
+```bash
+curl http://localhost:8000/api/v1/projects
+```
+
+**Получить источники**
+```bash
+curl http://localhost:8000/api/v1/sources
+```
+
+**Статистика по проектам**
+```bash
+curl http://localhost:8000/api/v1/articles/stats/by-project
+```
+
+**Поиск статей**
+```bash
+curl "http://localhost:8000/api/v1/articles/search/by-text?q=образование"
+```
+
+Полную документацию API смотрите на http://localhost:8000/docs
+
+## 🔧 Управление проектом
+
+### Полезные команды
+
+```bash
+# Просмотр логов всех сервисов
+bash scripts/logs.sh
+
+# Просмотр логов конкретного сервиса
+bash scripts/logs.sh backend
+bash scripts/logs.sh celery-worker
+bash scripts/logs.sh frontend
+
+# Остановка сервисов
+docker-compose down
+
+# Перезагрузка сервисов
+docker-compose restart
+
+# Вход в контейнер backend
+docker-compose exec backend bash
+
+# Вход в базу данных PostgreSQL
+docker-compose exec postgres psql -U media_user -d media_monitoring
+
+# Просмотр статуса сервисов
+docker-compose ps
+
+# Очистка проекта
+bash scripts/cleanup.sh
+```
+
+## 📚 Структура проекта
+
+```
+media-monitoring-kherson/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                 # FastAPI приложение
+│   │   ├── config.py               # Конфигурация
+│   │   ├── database.py             # SQLAlchemy модели
+│   │   ├── schemas.py              # Pydantic схемы
+│   │   ├── api/
+│   │   │   ├── articles.py         # API для статей
+│   │   │   ├── projects.py         # API для проектов
+│   │   │   └── sources.py          # API для источников
+│   │   ├── tasks/
+│   │   │   └── parse_feeds.py      # Celery задачи
+│   │   ├── nlp/
+│   │   │   └── classifier.py       # NLP классификатор
+│   │   └── parsers/
+│   │       └── rss_parser.py       # RSS парсер
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── Dockerfile.worker
+├── frontend/
+│   ├── app/
+│   │   ├── page.tsx               # Главная страница
+│   │   ├── layout.tsx             # Root layout
+│   │   └── globals.css            # Глобальные стили
+│   ├── components/
+│   │   ├── Header.tsx             # Заголовок
+│   │   ├── ArticleCard.tsx        # Карточка статьи
+│   │   ├── ArticleFeed.tsx        # Лента статей
+│   │   └── FilterPanel.tsx        # Панель фильтров
+│   ├── lib/
+│   │   ├── api.ts                 # API клиент
+│   │   └── types.ts               # TypeScript типы
+│   ├── package.json
+│   ├── next.config.js
+│   ├── tailwind.config.js
+│   └── Dockerfile
+├── docker-compose.yml              # Docker Compose конфигурация
+├── .env.example                    # Шаблон переменных окружения
+└── scripts/
+    ├── init.sh                     # Инициализация проекта
+    ├── logs.sh                     # Просмотр логов
+    └── cleanup.sh                  # Очистка проекта
+```
+
+## ⚙️ Конфигурация
+
+Создайте файл `.env` на основе `.env.example`:
+
 ```bash
 cp .env.example .env
-# Отредактируйте .env согласно вашим параметрам
 ```
 
-### 3. Запустить через Docker Compose
+Основные переменные:
+
+```env
+# Database
+DATABASE_URL=postgresql://media_user:media_password@postgres:5432/media_monitoring
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# API
+API_V1_PREFIX=/api/v1
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+
+# Parsers
+PARSE_INTERVAL_MINUTES=60          # Интервал парсинга (часы)
+MAX_ARTICLES_PER_SOURCE=100        # Макс статей с одного источника
+ARTICLE_RETENTION_DAYS=90          # Хранение статей (дни)
+
+# NLP
+NLP_CONFIDENCE_THRESHOLD=0.5       # Порог уверенности классификации
+USE_NATASHA=True                   # Использовать Natasha для NER
+```
+
+## 📊 База данных
+
+### Модели
+
+**Article** - Статья
+- id, title, content, url, published_date
+- source_id (ForeignKey to Source)
+- national_projects (ManyToMany to NationalProject)
+- location_markers, is_kherson_related
+
+**Source** - Источник информации
+- id, name, source_type (rss/telegram/website)
+- url, is_active, last_parsed
+
+**NationalProject** - Национальный проект
+- id, name, description, keywords
+- is_active, color_badge
+
+**ParseLog** - Лог парсинга
+- id, source_id, parse_start, parse_end
+- status, articles_found, articles_saved
+
+## 🔄 Расписание задач
+
+Celery Beat запускает задачи по расписанию:
+
+- **Каждый час**: Парсинг всех RSS источников
+- **03:00 каждый день**: Удаление старых статей
+- **Каждые 15 минут**: Обновление статистики
+
+Отредактируйте `backend/app/tasks/parse_feeds.py` для изменения расписания.
+
+## 🐛 Troubleshooting
+
+### Backend не запускается
 ```bash
-docker-compose up --build
+# Проверьте логи
+bash scripts/logs.sh backend
+
+# Пересоберите образ
+docker-compose build --no-cache backend
+docker-compose restart backend
 ```
 
-Приложение будет доступно:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+### Frontend не загружает данные
+- Проверьте, что backend работает: `curl http://localhost:8000/health`
+- Проверьте CORS настройки в `.env`
+- Посмотрите логи frontend: `bash scripts/logs.sh frontend`
 
-### 4. Первый запуск парсеров
+### Статьи не парсятся
 ```bash
-docker-compose exec backend celery -A app.tasks call app.tasks.parse_feeds.parse_all_sources
+# Проверьте статус Celery worker
+bash scripts/logs.sh celery-worker
+
+# Запустите парсинг вручную
+docker-compose exec backend python -c "from app.tasks.parse_feeds import parse_all_sources; parse_all_sources()"
 ```
 
-## 📚 API Endpoints
-
-### Articles
-- `GET /api/articles` - Получить список статей с фильтрацией
-- `GET /api/articles/{id}` - Получить деталь статьи
-- `GET /api/articles/search?q=query` - Поиск по тексту
-
-### Projects
-- `GET /api/projects` - Список всех Национальных проектов
-- `GET /api/projects/{id}/articles` - Статьи по проекту
-
-### Sources
-- `GET /api/sources` - Список источников
-- `GET /api/sources/{id}/articles` - Статьи от источника
-
-## 🔍 Национальные проекты
-
-Приложение отслеживает следующие проекты:
-1. Демография
-2. Культура
-3. Образование
-4. Здравоохранение
-5. Наука и университеты
-6. Жилье и городская среда
-7. Экология
-8. Безопасные качественные дороги
-9. Цифровая экономика
-10. Малое и среднее предпринимательство
-11. Туризм и индустрия гостеприимства
-12. Семья
-
-## 🌍 Источники данных
-
-- **Федеральные агентства**: ТАСС, РИА Новости, Интерфакс
-- **Региональные порталы**: Kherson.ks и локальные издания
-- **Social Media**: Telegram-каналы (через Telethon)
-- **Локальные сайт��**: Мониторинг госсайтов и муниципальных портал
-
-## 🛡️ Фильтрация локации
-
-Статьи автоматически фильтруются по маркерам:
-- Город: Херсон, Геническ, Каховка
-- Регион: Херсонская область, Херсонской
-- Районы: Голопристанський, Скадовськ, Чорноморськ
-
-## 📊 Database Schema
-
-### Articles
-```sql
-CREATE TABLE articles (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(500) NOT NULL,
-  content TEXT NOT NULL,
-  snippet VARCHAR(1000),
-  url VARCHAR(2048) UNIQUE NOT NULL,
-  source_id INTEGER NOT NULL REFERENCES sources(id),
-  published_date TIMESTAMP NOT NULL,
-  fetched_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  location_markers TEXT[],
-  raw_text TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE article_projects (
-  id SERIAL PRIMARY KEY,
-  article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
-  project_id INTEGER NOT NULL REFERENCES national_projects(id),
-  confidence FLOAT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE national_projects (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) UNIQUE NOT NULL,
-  description TEXT,
-  keywords TEXT[],
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE sources (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  type VARCHAR(50), -- 'rss', 'telegram', 'website'
-  url VARCHAR(2048),
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## 🔄 Workflow парсинга
-
-1. **Периодически** (каждый час) запускаются Celery задачи
-2. **Парсеры** извлекают новые статьи из источников
-3. **Фильтрация** по локации (Херсонская область)
-4. **NLP классификация** определяет связанные Нацпроекты
-5. **Сохранение** в PostgreSQL с метаданными
-6. **Frontend** отображает актуальные данные
-
-## 🧪 Тестирование
-
+### Проблемы с БД
 ```bash
-# Backend тесты
-docker-compose exec backend pytest
+# Проверьте подключение
+docker-compose exec postgres psql -U media_user -d media_monitoring -c "SELECT 1;"
 
-# Frontend тесты
-docker-compose exec frontend npm test
+# Пересоздайте таблицы
+docker-compose exec backend python -c "from app.database import init_db; init_db()"
 ```
 
-## 📝 Логирование
+## 📝 Лицензия
 
-Логи доступны через Docker:
-```bash
-docker-compose logs -f backend
-docker-compose logs -f frontend
-```
+MIT License - см. LICENSE файл
 
-## 🚢 Production Deploy
+## 👤 Автор
 
-### Подготовка к продакшену
+**Samzez1** - GitHub профиль: https://github.com/Samzez1
 
-1. Обновить `.env` для production
-2. Использовать переменные окружения для sensitive данных
-3. Настроить HTTPS (nginx/Traefik)
-4. Настроить резервные копии PostgreSQL
-5. Использовать managed Redis (AWS ElastiCache, Heroku Redis)
+## 🤝 Контрибьютинг
 
-### Deploy на облако
+Пулл-реквесты приветствуются! Для больших изменений сначала откройте Issue.
 
-**Пример для Heroku:**
-```bash
-heroku create media-monitoring-kherson
-heroku addons:create heroku-postgresql:standard-0
-heroku addons:create heroku-redis:premium-0
-git push heroku main
-```
+## 📬 Обратная связь
 
-## 📄 Лицензия
-
-MIT License
-
-## 👨‍💻 Автор
-
-Samzez1
-
-## 📞 Контакты & Поддержка
-
-Для вопросов создавайте Issues на GitHub.
+Если у вас есть вопросы или предложения, создайте Issue на GitHub.
 
 ---
 
-**Статус**: 🚧 В разработке
-**Версия**: 0.1.0
+**Made with ❤️ for monitoring National Projects of Russia in Kherson region**
+````
